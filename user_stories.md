@@ -25,26 +25,26 @@ User stories for our CSC365 project focused on providing a place to learn about 
 
 ## Exceptions and Error Scenarios
 
-<strong>Exception 1:</strong> Invalid API key or token
+<strong>Exception 1:</strong> Invalid API key or token<br>
 If a user provides an invalid or expired API token, the system will return an error with a message asking them to log in again or generate a new token.
 
-<strong>Exception 2:</strong> User tries to access another user's data
+<strong>Exception 2:</strong> User tries to access another user's data<br>
 If a user attempts to access another user’s watchlist or notes, the system will deny access.
 
-<strong>Exception 3:</strong> User adds a duplicate stock to watchlist
+<strong>Exception 3:</strong> User adds a duplicate stock to watchlist<br>
 If a stock already exists in the user's watchlist, the system will inform the user: “This stock is already in your watchlist.”
 
-<strong>Exception 4:</strong> Invalid input format 
+<strong>Exception 4:</strong> Invalid input format<br>
 If a user submits malformed input, the API will return a Bad Request error with a message: “Invalid request format. Please check your input.”
 
-<strong>Exception 5:</strong> User tries to register with existing email/username
+<strong>Exception 5:</strong> User tries to register with existing email/username<br>
 If the user attempts to register with an already used email or username, they’ll receive a message: “That email is already associated with an account.
 
-<strong>Exception 6:</strong> User runs out of virtual money to trade
+<strong>Exception 6:</strong> User runs out of virtual money to trade<br>
 An error will be thrown that notifies the user of their unsufficient funds. Gives the option to reset their entire portfolio (and funds to default value), or to keep using their current portfolio.
 
-<strong>Exception 7:</strong> User attempts to buy amount of shares that exceeds their current funds
+<strong>Exception 7:</strong> User attempts to buy amount of shares that exceeds their current funds<br>
 An error will thrown that notifies the user of their unsufficient funds and will decline the purchase. Notifies the user of the maximum amount of shares they can buy with their current funds.
 
-<strong>Exception 8:</strong> User tries to sell amount of shares that exceeds the amount they currently have
+<strong>Exception 8:</strong> User tries to sell amount of shares that exceeds the amount they currently have<br>
 An error will be thrown that notifies the user that they cannot sell more shares of a stock than they currently have. Rejects the user's request.
