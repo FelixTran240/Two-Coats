@@ -21,6 +21,11 @@ User stories for our CSC365 project focused on providing a place to learn about 
 
 9. As a fund manager of a recently established mutual fund, I want to be able to monitor how potential/new hires will handle our customers' money. By seeing if their investment strategies align with our customers' goals, this will give me a better sense of whether they would be a good hire or not. If I see potential, I can also give my personal insight on what can be improved.
 
+10. As a learning investor, I want to be able to create an fake-investing portfolio so I can get a feel for what it's like to have a real investment portfolio
+
+11. As a frequent user, I want to be able to access my portfolio in a secure way so I can easily see the progress of my fake-investment portfoloio
+
+12. As a learning investor, I want this service to follow all the same protocols that a normal investing service would (PDT rule, market open & close times) so that I have a more seamless tranistion to a real investment portfolio
 
 
 ## Exceptions and Error Scenarios
