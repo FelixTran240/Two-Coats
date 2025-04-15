@@ -63,6 +63,9 @@ An error will be thrown that notifies the user that they cannot make more than 3
 <strong>Exception 11:</strong> User attemtps to trade a stock with an invalid symbol<br>
 An error will be thrown that notifies the user that they must enter a valid symbol. Rejects the user's request.
 
+<strong>Exception 12:</strong> Orders not filled<br>
+An error will be thrown that notifies the user that their trade order wasn't fulfilled yet.
+
 
 
 
