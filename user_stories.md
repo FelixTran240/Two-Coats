@@ -53,3 +53,16 @@ An error will thrown that notifies the user of their unsufficient funds and will
 
 <strong>Exception 8:</strong> User tries to sell amount of shares that exceeds the amount they currently have<br>
 An error will be thrown that notifies the user that they cannot sell more shares of a stock than they currently have. Rejects the user's request.
+
+<strong>Exception 9:</strong> User attempts to make a trade outisde of market hours<br>
+An error will be thrown that notifies the user that they cannot make trades until the market opens Rejects the user's request.
+
+<strong>Exception 10:</strong> User attempts to make a trade that violates the PDT rule<br>
+An error will be thrown that notifies the user that they cannot make more than 3 day trades per 5 day period. Rejects the user's request.
+
+<strong>Exception 11:</strong> User attemtps to trade a stock with an invalid symbol<br>
+An error will be thrown that notifies the user that they must enter a valid symbol. Rejects the user's request.
+
+
+
+
