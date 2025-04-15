@@ -15,21 +15,36 @@ User stories for our CSC365 project focused on providing a place to learn about 
 
 6. As a returning user, I want to have a watchlist and notes so that I can revisit my learning progress across sessions.
 
+7. As a teacher, I want to set up a portfolio with investments of my suggestion to show them the results of my strategies without showing them my real money. I wouldn't want to be putting my personal money into a new portfolio (that mirrors what I already do) every time a new quarter comes around either.
+
+8. As a parent, I want my children to learn about investing and develop an investment strategy that suits their risk tolerance the best.
+
+9. As a fund manager of a recently established mutual fund, I want to be able to monitor how potential/new hires will handle our customers' money. By seeing if their investment strategies align with our customers' goals, this will give me a better sense of whether they would be a good hire or not. If I see potential, I can also give my personal insight on what can be improved.
+
 
 
 ## Exceptions and Error Scenarios
 
-Exception 1: Invalid API key or token
+<strong>Exception 1:</strong> Invalid API key or token
 If a user provides an invalid or expired API token, the system will return an error with a message asking them to log in again or generate a new token.
 
-Exception 2: User tries to access another user's data
+<strong>Exception 2:</strong> User tries to access another user's data
 If a user attempts to access another user’s watchlist or notes, the system will deny access.
 
-Exception 3: User adds a duplicate stock to watchlist
+<strong>Exception 3:</strong> User adds a duplicate stock to watchlist
 If a stock already exists in the user's watchlist, the system will inform the user: “This stock is already in your watchlist.”
 
-Exception 4: Invalid input format 
+<strong>Exception 4:</strong> Invalid input format 
 If a user submits malformed input, the API will return a Bad Request error with a message: “Invalid request format. Please check your input.”
 
-Exception 5: User tries to register with existing email/username
+<strong>Exception 5:</strong> User tries to register with existing email/username
 If the user attempts to register with an already used email or username, they’ll receive a message: “That email is already associated with an account.
+
+<strong>Exception 6:</strong> User runs out of virtual money to trade
+An error will be thrown that notifies the user of their unsufficient funds. Gives the option to reset their entire portfolio (and funds to default value), or to keep using their current portfolio.
+
+<strong>Exception 7:</strong> User attempts to buy amount of shares that exceeds their current funds
+An error will thrown that notifies the user of their unsufficient funds and will decline the purchase. Notifies the user of the maximum amount of shares they can buy with their current funds.
+
+<strong>Exception 8:</strong> User tries to sell amount of shares that exceeds the amount they currently have
+An error will be thrown that notifies the user that they cannot sell more shares of a stock than they currently have. Rejects the user's request.
