@@ -207,19 +207,15 @@ Customer chooses whether they want to buy or sell their stock(s) in dollars ($) 
 **Request**:
 
 ```json
-[
-  {
+{
     "userId": "12345",
     "token": "SECURITY-TOKEN-4c7a3b6e-e9f4-4b11-9473-8f29a2f0f021"
     "symbol": "AAPL",
     "transaction_type": "buy"
     "transaction_currency": "shares"
     "quantity": "5.00"
-  },
-  {
-    ...
-  }
-]
+}
+
 ```
 **Response**:
 
@@ -240,16 +236,11 @@ Returns customer's total money and positions in account.
 **Request**:
 
 ```json
-[
-  {
+{
     "userId": "12345",
     "token": "SECURITY-TOKEN-4c7a3b6e-e9f4-4b11-9473-8f29a2f0f021"
-    ""
-  },
-  {
-    ...
-  }
-]
+}
+
 ```
 **Response**:
 
@@ -263,7 +254,6 @@ Returns customer's total money and positions in account.
       "TSLA": 2000.00
       "GOOG": 500.00
     }
-    ""
 }
 ```
 - **Errors:**
