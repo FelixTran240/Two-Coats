@@ -198,3 +198,76 @@
   ```
 - **Errors:**
   - `404 Not Found`: No data found for the given parameters.
+
+---
+
+## 11. `POST /transaction` 
+Customer chooses whether they want to buy or sell their stock(s) in dollars ($) or shares.
+
+**Request**:
+
+```json
+[
+  {
+    "userId": "12345",
+    "token": "SECURITY-TOKEN-4c7a3b6e-e9f4-4b11-9473-8f29a2f0f021"
+    "symbol": "AAPL",
+    "transaction_type": "buy"
+    "transaction_currency": "shares"
+    "quantity": "5.00"
+  },
+  {
+    ...
+  }
+]
+```
+**Response**:
+
+```json
+{
+    "success": "boolean"
+}
+```
+- **Errors:**
+  - `400 Bad Request`: Invalid input. (userId DNE, token invalid, symbol DNE, not enough money to buy, not enough shares to sell)
+  - `404 Not Found`: No data found for the given parameters.
+
+---
+
+## 12. `POST /account_summary` 
+Returns customer's total money and positions in account.
+
+**Request**:
+
+```json
+[
+  {
+    "userId": "12345",
+    "token": "SECURITY-TOKEN-4c7a3b6e-e9f4-4b11-9473-8f29a2f0f021"
+    ""
+  },
+  {
+    ...
+  }
+]
+```
+**Response**:
+
+```json
+{
+    "total_money": 11000.00,
+    "positions_dollars": {
+      "AAPL": 1000.00
+      "VOO": 6000.00
+      "AMZN": 1500.00
+      "TSLA": 2000.00
+      "GOOG": 500.00
+    }
+    ""
+}
+```
+- **Errors:**
+  - `400 Bad Request`: Invalid input. (userId DNE, token invalid)
+  - `404 Not Found`: No data found for the given parameters.
+
+---
