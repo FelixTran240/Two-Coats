@@ -230,7 +230,7 @@ Customer chooses whether they want to buy or sell their stock(s) in dollars ($) 
 
 ---
 
-## 12. `POST /account_summary` 
+## 12. `GET /account_summary` 
 Returns customer's total money and positions in account.
 
 **Request**:
