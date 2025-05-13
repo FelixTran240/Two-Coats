@@ -72,7 +72,7 @@ buy-sell-service
 
 7. Run the application:
    ```
-   python run.py
+   python3 run.py
    ```
 
 ## Usage
