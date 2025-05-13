@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []dependencies = [
+dependencies = [
     "alembic>=1.15.2",
     "fastapi>=0.115.11",
     "mypy>=1.15.0",
