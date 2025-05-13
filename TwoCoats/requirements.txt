@@ -1,0 +1,5 @@
+Flask==2.1.2
+SQLAlchemy==1.4.27
+alembic==1.7.5
+pytest==6.2.5
+requests==2.26.0
