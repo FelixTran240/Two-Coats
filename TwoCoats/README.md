@@ -37,15 +37,32 @@ buy-sell-service
 1. Clone the repository:
    ```
    git clone <repository-url>
-   cd buy-sell-service
+   cd TwoCoats
    ```
 
-2. Install the required dependencies:
+2. Create your own virtual environment:
+   ```
+   python3 -m venv venv
+   ```
+
+3. Activate virtual environment:
+
+   For macOS/Linux:
+   ```
+   source venv/bin/activate
+   ```
+
+   For Windows:
+   ```
+   venv\Scripts\activate
+   ```
+
+5. Install the required dependencies:
    ```
    pip install -r requirements.txt
    ```
 
-3. Set up the database:
+6. Set up the database:
    - Ensure you have a PostgreSQL database running.
    - Update the database connection settings in `src/services/database.py`.
    - Run the Alembic migrations to create the necessary schema:
@@ -53,9 +70,9 @@ buy-sell-service
      alembic upgrade head
      ```
 
-4. Run the application:
+7. Run the application:
    ```
-   python src/app.py
+   python3 run.py
    ```
 
 ## Usage
