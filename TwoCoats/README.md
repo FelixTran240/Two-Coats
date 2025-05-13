@@ -46,22 +46,23 @@ buy-sell-service
    ```
 
 3. Activate virtual environment:
-      For macOS/Linux:
+
+   For macOS/Linux:
    ```
    source venv/bin/activate
    ```
 
-      For Windows:
+   For Windows:
    ```
    venv\Scripts\activate
    ```
 
-4. Install the required dependencies:
+5. Install the required dependencies:
    ```
    pip install -r requirements.txt
    ```
 
-5. Set up the database:
+6. Set up the database:
    - Ensure you have a PostgreSQL database running.
    - Update the database connection settings in `src/services/database.py`.
    - Run the Alembic migrations to create the necessary schema:
@@ -69,7 +70,7 @@ buy-sell-service
      alembic upgrade head
      ```
 
-6. Run the application:
+7. Run the application:
    ```
    python run.py
    ```
