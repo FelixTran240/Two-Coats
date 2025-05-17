@@ -5,7 +5,6 @@ from alembic import context
 # from src.services.database import Base
 import os
 import sys
-import sqlalchemy.dialects.postgresql.psycopg  # Force psycopg plugin load
 
 config = context.config
 
