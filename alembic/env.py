@@ -2,13 +2,24 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from alembic import context
-from src.services.database import Base
+# from src.services.database import Base
+import os
+import sys
+import sqlalchemy.dialects.postgresql.psycopg  # Force psycopg plugin load
 
 config = context.config
 
-fileConfig(config.config_file_name)
+config.set_main_option(
+    "sqlalchemy.url",
+    os.getenv(
+        "POSTGRES_URI", "postgresql+psycopg://username:password@localhost/dbname"
+    ),
+)
 
-target_metadata = Base.metadata
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
+
+target_metadata = None # or Base.metadata
 
 def run_migrations_offline():
     url = config.get_main_option("sqlalchemy.url")
