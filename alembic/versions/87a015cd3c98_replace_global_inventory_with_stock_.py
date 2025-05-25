@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "replace_global_inventory_with_stock_market"
-down_revision: Union[str, None] = "e91d0c24f7d0"
+revision = "87a015cd3c98"  # <-- Use a short hash (max 32 chars)
+down_revision = "e91d0c24f7d0"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
