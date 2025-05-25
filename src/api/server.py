@@ -1,0 +1,30 @@
+from fastapi import FastAPI
+from src.api.buy import router as buy_router
+from src.api.sell import router as sell_router
+from src.api.price import router as price_router
+from starlette.middleware.cors import CORSMiddleware
+
+app = FastAPI(
+    title="Mini Stock Market",
+    description="A miniature stock market API with buy, sell, and price endpoints.",
+    version="0.1.0",
+)
+
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(buy_router, prefix="/stocks", tags=["stocks"])
+app.include_router(sell_router, prefix="/stocks", tags=["stocks"])
+app.include_router(price_router, prefix="/stocks", tags=["stocks"])
+
+
+@app.get("/")
+async def root():
+    return {"message": "Mini Stock Market is running!"}

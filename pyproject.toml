@@ -1,9 +1,9 @@
 [project]
-name = "csc365project"
+name = "centralcoastcauldrons"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.12.9"
 dependencies = [
     "alembic>=1.15.2",
     "fastapi>=0.115.11",
@@ -16,7 +16,7 @@ dependencies = [
     "sqlalchemy>=2.0.39",
     "uv>=0.6.11",
     "uvicorn>=0.34.0",
-] 
+]
 
 [tool.pytest.ini_options]
-pythonpath = ["."]  
+pythonpath = ["."]
