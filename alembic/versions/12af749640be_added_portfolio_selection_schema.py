@@ -30,7 +30,7 @@ def upgrade() -> None:
                 primary_key=True
             ),
             sa.Column(
-                "current_portfolio"
+                "current_portfolio",
                 sa.Integer,
                 sa.ForeignKey("portfolios.port_id", name="port_id"),
                 nullable=True,
