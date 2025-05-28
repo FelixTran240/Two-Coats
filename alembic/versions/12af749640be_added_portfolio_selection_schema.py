@@ -26,7 +26,7 @@ def upgrade() -> None:
             "user_current_portfolio",
             sa.Column(
                 "user_id",
-                sa.String,
+                sa.Integer,
                 sa.ForeignKey("users.id", name="user_id"),
                 primary_key=True
             ),
