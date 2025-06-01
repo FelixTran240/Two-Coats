@@ -4,8 +4,12 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from src.database import SessionLocal
 from src.api.models import User
+from src.api import auth
 
-router = APIRouter()
+router = APIRouter(
+    tags=["stocks"],
+    dependencies=[Depends(auth.get_api_key)],
+)
 
 class SellRequest(BaseModel):
     user: str

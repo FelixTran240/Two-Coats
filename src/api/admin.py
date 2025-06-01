@@ -2,8 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from src.database import SessionLocal
 from src.api.models import User
+from src.api import auth
 
-router = APIRouter()
+router = APIRouter(
+    tags=["stocks"],
+    dependencies=[Depends(auth.get_api_key)],
+)
 
 def get_db():
     db = SessionLocal()
