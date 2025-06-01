@@ -1,16 +1,30 @@
-from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel
-from sqlalchemy.orm import Session
-from sqlalchemy import text
-from src.database import SessionLocal
-from src.api.models import User
+import time
+from fastapi import APIRouter, HTTPException, Depends, status
+from pydantic import BaseModel, Field, field_validator
+import bcrypt
+
+import sqlalchemy
 from src.api import auth
+from src import database as db
+
 
 router = APIRouter(
     prefix="/users",
     tags=["Portfolio"],
     dependencies=[Depends(auth.get_api_key)],
 )
+
+@router.post("/{user_id}/{password_hash}/portfolio/{portfolio_id}/switch")
+def change_working_portfolio(user_id: int, password_hash: str, portfolio_id: int):
+    """
+    Changes the current user into their requested portfolio
+    """
+    with db.engine.begin() as connection:
+        connection.execute(
+            sqlalchemy.text(
+                
+            )
+        )
 
 class BuyRequest(BaseModel):
     user: str

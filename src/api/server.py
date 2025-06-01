@@ -3,7 +3,7 @@ from fastapi import FastAPI
 # from src.api.sell import router as sell_router
 from src.api.price import router as price_router
 from src.api.user import router as user_router
-from src.api.portfolio import router as portfolio_router
+# TODO: from src.api.portfolio import router as portfolio_router
 from src.api.admin import router as admin_router
 from starlette.middleware.cors import CORSMiddleware
 
