@@ -90,40 +90,6 @@ wheels = [
 ]
 
 [[package]]
-name = "centralcoastcauldrons"
-version = "0.1.0"
-source = { virtual = "." }
-dependencies = [
-    { name = "alembic" },
-    { name = "bcrypt" },
-    { name = "fastapi" },
-    { name = "mypy" },
-    { name = "psycopg", extra = ["binary"] },
-    { name = "pytest" },
-    { name = "python-dotenv" },
-    { name = "ruff" },
-    { name = "sqlalchemy" },
-    { name = "uv" },
-    { name = "uvicorn" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "alembic", specifier = ">=1.15.2" },
-    { name = "bcrypt", specifier = ">=4.0.1" },
-    { name = "fastapi", specifier = ">=0.115.11" },
-    { name = "mypy", specifier = ">=1.15.0" },
-    { name = "psycopg", specifier = ">=3.2.6" },
-    { name = "psycopg", extras = ["binary"] },
-    { name = "pytest", specifier = ">=8.3.5" },
-    { name = "python-dotenv", specifier = ">=1.0.1" },
-    { name = "ruff", specifier = ">=0.11.2" },
-    { name = "sqlalchemy", specifier = ">=2.0.39" },
-    { name = "uv", specifier = ">=0.6.11" },
-    { name = "uvicorn", specifier = ">=0.34.0" },
-]
-
-[[package]]
 name = "click"
 version = "8.1.8"
 source = { registry = "https://pypi.org/simple" }
@@ -517,6 +483,40 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/04/1b/52b27f2e13ceedc79a908e29eac426a63465a1a01248e5f24aa36a62aeb3/starlette-0.46.1.tar.gz", hash = "sha256:3c88d58ee4bd1bb807c0d1acb381838afc7752f9ddaec81bbe4383611d833230", size = 2580102, upload-time = "2025-03-08T10:55:34.504Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a0/4b/528ccf7a982216885a1ff4908e886b8fb5f19862d1962f56a3fce2435a70/starlette-0.46.1-py3-none-any.whl", hash = "sha256:77c74ed9d2720138b25875133f3a2dae6d854af2ec37dceb56aef370c1d8a227", size = 71995, upload-time = "2025-03-08T10:55:32.662Z" },
+]
+
+[[package]]
+name = "twocoats"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "alembic" },
+    { name = "bcrypt" },
+    { name = "fastapi" },
+    { name = "mypy" },
+    { name = "psycopg", extra = ["binary"] },
+    { name = "pytest" },
+    { name = "python-dotenv" },
+    { name = "ruff" },
+    { name = "sqlalchemy" },
+    { name = "uv" },
+    { name = "uvicorn" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "alembic", specifier = ">=1.15.2" },
+    { name = "bcrypt", specifier = ">=4.0.1" },
+    { name = "fastapi", specifier = ">=0.115.11" },
+    { name = "mypy", specifier = ">=1.15.0" },
+    { name = "psycopg", specifier = ">=3.2.6" },
+    { name = "psycopg", extras = ["binary"] },
+    { name = "pytest", specifier = ">=8.3.5" },
+    { name = "python-dotenv", specifier = ">=1.0.1" },
+    { name = "ruff", specifier = ">=0.11.2" },
+    { name = "sqlalchemy", specifier = ">=2.0.39" },
+    { name = "uv", specifier = ">=0.6.11" },
+    { name = "uvicorn", specifier = ">=0.34.0" },
 ]
 
 [[package]]

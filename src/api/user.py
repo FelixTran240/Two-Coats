@@ -30,6 +30,7 @@ def create_user(new_user: UserCreate):
     """
     Creates a new user with a hashed password (bcrypt hashing algorithm)
     """
+
     with db.engine.begin() as connection:
         # Check for existing user
         res = connection.execute(
@@ -49,7 +50,7 @@ def create_user(new_user: UserCreate):
         # Generate hash
         hashed_pw = bcrypt.hashpw(new_user.password.encode(), bcrypt.gensalt()).decode() 
 
-        # Create new user entry & return result
+        # Create new user entry 
         created = connection.execute(
             sqlalchemy.text(
                 """
@@ -63,6 +64,17 @@ def create_user(new_user: UserCreate):
                 "password_hash": hashed_pw, 
             }
         ).one()
+        
+        # Add user entry to user_current_portfolio (default is NULL)
+        connection.execute(
+            sqlalchemy.text(
+                """
+                INSERT INTO user_current_portfolio (user_id)
+                VALUES (:user_id)
+                """
+            ),
+            {"user_id": created.id}
+        )
 
         # Success response
         return CreateUserResponse(
@@ -88,6 +100,7 @@ def login(login_info: UserLogin):
     Validates a user's login information, returns the salted password hash 
     to use for accessing account's portfolios, buying, and selling
     """
+
     with db.engine.begin() as connection:
         user = connection.execute(
             sqlalchemy.text(
@@ -143,6 +156,7 @@ def logout(logout_info: UserLogout):
     """
     Logs user out by deleting their session token
     """
+
     with db.engine.begin() as connection:
         res = connection.execute(
             sqlalchemy.text(

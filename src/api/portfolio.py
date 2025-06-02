@@ -9,23 +9,196 @@ from src import database as db
 
 
 router = APIRouter(
-    prefix="/users",
-    tags=["Portfolio"],
+    tags=["portfolio"],
     dependencies=[Depends(auth.get_api_key)],
 )
 
-@router.post("/{user_id}/{password_hash}/portfolio/{portfolio_id}/switch")
-def change_working_portfolio(user_id: int, password_hash: str, portfolio_id: int):
+
+class CreatePortfolio(BaseModel):
+    portfolio_name: str
+    session_token: str
+
+class CreationResponse(BaseModel):
+    message: str
+    portfolio_id: int
+    portfolio_name: str
+
+@router.post("/create", response_model=CreationResponse)
+def create_portfolio(new_portfolio: CreatePortfolio):
     """
-    Changes the current user into their requested portfolio
+    Creates a new portfolio under a user's ownership after authentication
     """
+
     with db.engine.begin() as connection:
-        connection.execute(
+        # Authenticate w/ session token
+        user = connection.execute(
             sqlalchemy.text(
-                
-            )
+                """
+                SELECT user_id FROM temp_user_tokens 
+                WHERE token = :token
+                """
+            ),
+            {
+                "token": new_portfolio.session_token
+            }
+        ).first()
+
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid session")
+
+        # Check for existing portfolio name per user
+        existing = connection.execute(
+            sqlalchemy.text(
+                """
+                SELECT 1 from portfolios
+                WHERE user_id = :user_id AND port_name = :port_name
+                """
+            ),
+            {
+                "user_id": user.user_id,
+                "port_name": new_portfolio.portfolio_name
+            }
+        ).first()
+        
+        if existing:
+            raise HTTPException(status_code=400, detail="You already own a portfolio with the same name")
+        
+
+        # Insert new entry into portfolio table
+        res = connection.execute(
+            sqlalchemy.text(
+                """
+                INSERT INTO portfolios (user_id, port_name)
+                VALUES (:user_id, :port_name)
+                RETURNING port_id, port_name
+                """
+            ),
+            {
+                "user_id": user.user_id,
+                "port_name": new_portfolio.portfolio_name
+            }
+        ).first()
+
+        return CreationResponse(
+            message="Portfolio successfully created!",
+            portfolio_id=res.port_id,
+            portfolio_name=res.port_name
         )
 
+
+class ListPortfolios(BaseModel):
+    session_token: str
+
+class ListResponse(BaseModel):
+    # TODO
+    pass
+
+@router.post("/list", response_model=ListResponse)
+def list_portfolios():
+    """
+    List the portfolios that users own (and their information) 
+    """
+
+    pass
+
+
+class FindCurrentPortfolio(BaseModel):
+    session_token: str
+
+class FindCurrentPortfolioResponse(BaseModel):
+    # TODO
+    pass
+
+@router.post("/find_current_portfolio", response_model=FindCurrentPortfolioResponse)
+def find_current_portfolio(fcp: FindCurrentPortfolio):
+    """
+    Find what current portfolio user is currently in (like unix pwd)
+    """
+
+    pass
+
+
+class SwitchPortfolio(BaseModel):
+    portfolio_name: str
+    session_token: str
+
+class SwitchResponse(BaseModel):
+    message: str
+    user_id: int
+    current_portfolio: int
+    current_portfolio_name: str
+
+@router.post("/switch", response_model=SwitchResponse)
+def switch_portfolio(switch_request: SwitchPortfolio):
+    """
+    Updates value that represents the user's current active portfolio
+    """
+
+    with db.engine.begin() as connection:
+        # Validate active session 
+        logged_in = connection.execute(
+            sqlalchemy.text(
+                """
+                SELECT user_id FROM temp_user_tokens
+                WHERE token = :session_token
+                """
+            ),
+            {"session_token": switch_request.session_token}
+        ).first()
+
+        if not logged_in:
+            raise HTTPException(status_code=401, detail="Invalid session token")
+
+        user_id = logged_in.user_id
+
+        # Get portfolio_id for given user & portfolio_name
+        portfolio = connection.execute(
+            sqlalchemy.text(
+                """
+                SELECT port_id FROM portfolios
+                WHERE user_id = :user_id AND port_name = :port_name
+                """
+            ),
+            {
+                "user_id": user_id,
+                "port_name": switch_request.portfolio_name
+            }
+        ).first()
+
+        if not portfolio:
+            raise HTTPException(status_code=400, detail="Portfolio not found")
+
+        portfolio_id = portfolio.port_id
+
+        # Update user_current_portfolio
+        update = connection.execute(
+            sqlalchemy.text(
+                """
+                UPDATE user_current_portfolio
+                SET current_portfolio = :port_id
+                WHERE user_id = :user_id
+                RETURNING user_id, current_portfolio
+                """
+            ),
+            {
+                "port_id": portfolio_id,
+                "user_id": user_id
+            }
+        ).first()
+
+        if not update:
+            raise HTTPException(status_code=400, detail="Failed to switch active portfolio")
+
+        return SwitchResponse(
+            message="Current portfolio successfully switched",
+            user_id=update.user_id,
+            current_portfolio=update.current_portfolio,
+            current_portfolio_name=switch_request.portfolio_name
+        )
+
+
+
+'''
 class BuyRequest(BaseModel):
     user: str
     quantity: int
@@ -83,3 +256,4 @@ def sell_stock(request: SellRequest, db: Session = Depends(get_db)):
         "balance": float(user.balance),
         "holdings": user.holdings
     }
+'''

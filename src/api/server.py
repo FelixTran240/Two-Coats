@@ -1,9 +1,7 @@
 from fastapi import FastAPI
-# from src.api.buy import router as buy_router
-# from src.api.sell import router as sell_router
 from src.api.price import router as price_router
 from src.api.user import router as user_router
-# TODO: from src.api.portfolio import router as portfolio_router
+from src.api.portfolio import router as portfolio_router
 from src.api.admin import router as admin_router
 from starlette.middleware.cors import CORSMiddleware
 
@@ -28,6 +26,7 @@ app.add_middleware(
 
 app.include_router(price_router, prefix="/stocks", tags=["stocks"])
 app.include_router(user_router, prefix="/users", tags=["users"])
+app.include_router(portfolio_router, prefix="/portfolio", tags=["portfolio"])
 app.include_router(admin_router, prefix="/admin", tags=["admin"])
 
 
