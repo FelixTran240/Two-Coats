@@ -5,25 +5,28 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from src.database import SessionLocal
 
-user_holdings = {}
-stock_data = {"price": 100.0}
-
 def update_price_periodically():
     while True:
         db: Session = SessionLocal()
         try:
-            result = db.execute(text("SELECT id, price FROM stock_state LIMIT 1")).first()
-            if result:
-                stock_id, current_price = result
-                new_price = max(current_price + random.uniform(-5, 5), 1.0)
+            # Fetch all stocks already in the DB
+            results = db.execute(text("SELECT id, price FROM stock_state")).fetchall()
+            for row in results:
+                stock_id, current_price = row
+                # Random change between -5 and +5; new price will be at least 1.0
+                change = random.uniform(-5, 5)
+                new_price = max(current_price + change, 1.0)
                 db.execute(
-                    text("UPDATE stock_state SET price = :price, updated_at = NOW() WHERE id = :id"),
-                    {"price": new_price, "id": stock_id}
+                    text("UPDATE stock_state SET price = :new_price, updated_at = NOW() WHERE id = :stock_id"),
+                    {"new_price": new_price, "stock_id": stock_id}
                 )
-                db.commit()
+            db.commit()
+        except Exception as e:
+            print("Error updating prices:", e)
         finally:
             db.close()
-        time.sleep(3600)  # 1 hour
+        # Sleep for 10 minutes
+        time.sleep(600)
 
-# Start the background thread
+# Start the background thread to update prices periodically
 threading.Thread(target=update_price_periodically, daemon=True).start()
