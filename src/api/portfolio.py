@@ -107,7 +107,9 @@ class FindCurrentPortfolio(BaseModel):
 
 class FindCurrentPortfolioResponse(BaseModel):
     # TODO
-    pass
+    message: str
+    portfolio_id: int
+    portfolio_name: str
 
 @router.post("/find_current_portfolio", response_model=FindCurrentPortfolioResponse)
 def find_current_portfolio(fcp: FindCurrentPortfolio):
@@ -115,7 +117,36 @@ def find_current_portfolio(fcp: FindCurrentPortfolio):
     Find what current portfolio user is currently in (like unix pwd)
     """
 
-    pass
+    with db.engine.begin() as connection:
+        # Verify session
+        logged_in = connection.execute(
+            sqlalchemy.text(
+                """
+                SELECT user_id FROM temp_user_tokens
+                WHERE token = :session_token
+                """
+            ),
+            {"session_token": fcp.session_token}
+        ).first()
+
+        if not logged_in:
+            raise HTTPException(status_code=401, detail="Invalid session token")
+
+        user_id = logged_in.user_id
+
+        # Retrieve user's current portfolio
+        # TODO: squeeze into one subquery by joining current_portfolio and
+        # portfolios to return both portfolio id and portfolio name
+        res = connection.execute(
+            sqlalchemy.text(
+                """
+                SELECT port_id
+                FROM user_current_portfolio
+                WHERE user_id = :user_id
+                """
+            ),
+            {"user_id": user_id}
+        )
 
 
 class SwitchPortfolio(BaseModel):
