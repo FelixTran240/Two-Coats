@@ -4,7 +4,7 @@ from src.database import SessionLocal
 from src.api import auth
 
 router = APIRouter(
-    tags=["stocks"],
+    tags=["admin"],
     dependencies=[Depends(auth.get_api_key)],
 )
 
