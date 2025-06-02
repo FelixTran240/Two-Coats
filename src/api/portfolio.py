@@ -90,23 +90,53 @@ class ListPortfolios(BaseModel):
     session_token: str
 
 class ListResponse(BaseModel):
-    # TODO
-    pass
+    portfolios: list[dict]
 
 @router.post("/list", response_model=ListResponse)
-def list_portfolios():
+def list_portfolios(list_req: ListPortfolios):
     """
     List the portfolios that users own (and their information) 
     """
 
-    pass
+    with db.engine.begin() as connection:
+        # Authenticate session token
+        user = connection.execute(
+            sqlalchemy.text(
+                """
+                SELECT user_id FROM temp_user_tokens
+                WHERE token = :token
+                """
+            ),
+            {"token": list_req.session_token}
+        ).first()
+
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid session token")
+
+        # Get all portfolios for this user
+        portfolios = connection.execute(
+            sqlalchemy.text(
+                """
+                SELECT port_id, port_name
+                FROM portfolios
+                WHERE user_id = :user_id
+                """
+            ),
+            {"user_id": user.user_id}
+        ).fetchall()
+
+        return ListResponse(
+            portfolios=[
+                {"portfolio_id": p.port_id, "portfolio_name": p.port_name}
+                for p in portfolios
+            ]
+        )
 
 
 class FindCurrentPortfolio(BaseModel):
     session_token: str
 
 class FindCurrentPortfolioResponse(BaseModel):
-    # TODO
     message: str
     portfolio_id: int
     portfolio_name: str
@@ -114,11 +144,10 @@ class FindCurrentPortfolioResponse(BaseModel):
 @router.post("/find_current_portfolio", response_model=FindCurrentPortfolioResponse)
 def find_current_portfolio(fcp: FindCurrentPortfolio):
     """
-    Find what current portfolio user is currently in (like unix pwd)
+    Find the current portfolio the user is in.
     """
-
     with db.engine.begin() as connection:
-        # Verify session
+        # Verify session token
         logged_in = connection.execute(
             sqlalchemy.text(
                 """
@@ -137,15 +166,29 @@ def find_current_portfolio(fcp: FindCurrentPortfolio):
         # Retrieve user's current portfolio
         # TODO: squeeze into one subquery by joining current_portfolio and
         # portfolios to return both portfolio id and portfolio name
+
+        # Join user_current_portfolio and portfolios to get id and name
+
         res = connection.execute(
             sqlalchemy.text(
                 """
-                SELECT port_id
-                FROM user_current_portfolio
-                WHERE user_id = :user_id
+                SELECT p.port_id, p.port_name
+                FROM user_current_portfolio ucp
+                JOIN portfolios p ON ucp.current_portfolio = p.port_id
+                WHERE ucp.user_id = :user_id
                 """
             ),
             {"user_id": user_id}
+        ).first()
+
+        if not res:
+            # Instead of returning null values, throw a 404 error.
+            raise HTTPException(status_code=404, detail="No current portfolio set for this user")
+
+        return FindCurrentPortfolioResponse(
+            message="Current portfolio found.",
+            portfolio_id=res.port_id,
+            portfolio_name=res.port_name
         )
 
 
