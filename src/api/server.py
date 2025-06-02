@@ -8,7 +8,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 app = FastAPI(
     title="Mini Stock Market",
-    description="A miniature stock market API with buy, sell, and price endpoints.",
+    description="A miniature stock market API with buy, sell, and price endpoints. Create a user, login, and you will receive a session token that will be used for any endpoints you plan to use that involve your account. Once you log out, the session token will no longer be active and you will have to log back in to receive another active token.",
     version="0.1.0",
 )
 
