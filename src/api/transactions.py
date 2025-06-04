@@ -28,7 +28,7 @@ class BuyResponse(BaseModel):
     total_cost: float
 
 @router.post("/buy_shares", response_model=BuyResponse)
-def buy_shares(request: BuySharesRequest):
+def buy_shares(request: BuySharesRequest) -> BuyResponse:
     """
     Allows user to buy a stock based on shares, the  
     ticker symbol and the current portfolio they are in
@@ -178,7 +178,7 @@ class BuyDollarsRequest(BaseModel):
     dollars: float
 
 @router.post("/buy_dollars", response_model=BuyResponse)
-def buy_dollars(request: BuyDollarsRequest):
+def buy_dollars(request: BuyDollarsRequest) -> BuyResponse:
     """
     Allows user to buy a stock based on shares, the  
     ticker symbol and the current portfolio they are in
@@ -336,7 +336,7 @@ class SellResponse(BaseModel):
     total_proceeds: float
 
 @router.post("/sell_shares", response_model=SellResponse)
-def sell_shares(request: SellSharesRequest):
+def sell_shares(request: SellSharesRequest) -> SellResponse:
     """
     Allows user to buy a stock based on shares, the  
     ticker symbol and the current portfolio they are in
@@ -492,7 +492,7 @@ class SellDollarsRequest(BaseModel):
     dollars: float
 
 @router.post("/sell_dollars", response_model=SellResponse)
-def sell_dollars(request: SellDollarsRequest):
+def sell_dollars(request: SellDollarsRequest) -> SellResponse:
     """
     Allows user to buy a stock based on shares, the  
     ticker symbol and the current portfolio they are in
