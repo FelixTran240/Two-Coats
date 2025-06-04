@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field, field_validator
 from decimal import Decimal
 from typing import List
 from collections import defaultdict
+from datetime import datetime
 
 import sqlalchemy
 from src.api import auth
@@ -24,9 +25,10 @@ class TransactionOut(BaseModel):
     stock_id: int
     transaction_type: str
     change: float
+    timestamp: datetime 
 
 @router.post("/current_portfolio_transactions")
-def get_current_portfolio_transactions(request: TransactionHistoryIn):
+def get_current_portfolio_transactions(request: TransactionHistoryIn) -> list[TransactionOut]:
     """
     Returns transactions for the user's current portfolio only.
     """
@@ -58,7 +60,13 @@ def get_current_portfolio_transactions(request: TransactionHistoryIn):
         results = connection.execute(
             sqlalchemy.text(
                 """
-                SELECT transaction_id, port_id, stock_id, transaction_type, change
+                SELECT 
+                transaction_id,
+                port_id,
+                stock_id,
+                transaction_type,
+                change,
+                timestamp
                 FROM transactions
                 WHERE user_id = :user_id AND port_id = :port_id
                 ORDER BY transaction_id DESC
@@ -73,13 +81,15 @@ def get_current_portfolio_transactions(request: TransactionHistoryIn):
                 port_id=row.port_id,
                 stock_id=row.stock_id,
                 transaction_type=row.transaction_type,
-                change=float(row.change)
+                change=float(row.change),
+                timestamp=row.timestamp
+
             )
             for row in results
         ]
 
 @router.post("/my_transactions")
-def get_my_transactions(request: TransactionHistoryIn):
+def get_my_transactions(request: TransactionHistoryIn) -> dict:
     """
     Returns all transactions for the user, grouped by portfolio (port_id).
     """
@@ -100,14 +110,21 @@ def get_my_transactions(request: TransactionHistoryIn):
         results = connection.execute(
             sqlalchemy.text(
                 """
-                SELECT transaction_id, port_id, stock_id, transaction_type, change
+                SELECT 
+                transaction_id,
+                port_id,
+                stock_id,
+                transaction_type,
+                change,
+                timestamp
                 FROM transactions
-                WHERE user_id = :user_id
+                WHERE user_id = :user_id AND port_id IS NOT NULL
                 ORDER BY transaction_id DESC
                 """
             ),
             {"user_id": user_id}
         ).fetchall()
+
 
         # Group transactions by port_id
         grouped = defaultdict(list)
@@ -117,7 +134,8 @@ def get_my_transactions(request: TransactionHistoryIn):
                 port_id=row.port_id,
                 stock_id=row.stock_id,
                 transaction_type=row.transaction_type,
-                change=float(row.change)
+                change=float(row.change),
+                timestamp=row.timestamp
             ))
 
         return {str(port_id): [t.dict() for t in txns] for port_id, txns in grouped.items()}
