@@ -1,7 +1,6 @@
 import time
 from fastapi import APIRouter, HTTPException, Depends, status
 from pydantic import BaseModel, Field, field_validator
-import bcrypt
 
 import sqlalchemy
 from src.api import auth
@@ -144,11 +143,12 @@ class FindCurrentPortfolioResponse(BaseModel):
     message: str
     portfolio_id: int
     portfolio_name: str
+    buying_power: str 
 
 @router.post("/find_current_portfolio", response_model=FindCurrentPortfolioResponse)
 def find_current_portfolio(fcp: FindCurrentPortfolio):
     """
-    Find the current portfolio the user is in.
+    Return the current portfolio the user is in.
     """
     with db.engine.begin() as connection:
         # Verify session token
@@ -176,7 +176,7 @@ def find_current_portfolio(fcp: FindCurrentPortfolio):
         res = connection.execute(
             sqlalchemy.text(
                 """
-                SELECT p.port_id, p.port_name
+                SELECT p.port_id, p.port_name, p.buying_power
                 FROM user_current_portfolio ucp
                 JOIN portfolios p ON ucp.current_portfolio = p.port_id
                 WHERE ucp.user_id = :user_id
@@ -190,10 +190,11 @@ def find_current_portfolio(fcp: FindCurrentPortfolio):
             raise HTTPException(status_code=404, detail="No current portfolio set for this user")
 
         return FindCurrentPortfolioResponse(
-            message="Current portfolio found.",
-            portfolio_id=res.port_id,
-            portfolio_name=res.port_name
-        )
+            message = "Current portfolio found",
+            portfolio_id = res.port_id,
+            portfolio_name = res.port_name,
+            buying_power = format(res.buying_power, ".2f") 
+        ) 
 
 
 class SwitchPortfolio(BaseModel):
@@ -204,6 +205,8 @@ class SwitchResponse(BaseModel):
     message: str
     user_id: int
     current_portfolio: int
+
+    # type is str for formatting reasons
     current_portfolio_name: str
 
 @router.post("/switch", response_model=SwitchResponse)
