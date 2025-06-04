@@ -92,7 +92,7 @@ class ListPortfolios(BaseModel):
 class ListResponse(BaseModel):
     portfolios: list[dict]
 
-@router.post("/list", response_model=ListResponse)
+@router.post("/list_portfolios", response_model=ListResponse)
 def list_portfolios(list_req: ListPortfolios):
     """
     List the portfolios that users own (and their information) 
@@ -117,7 +117,7 @@ def list_portfolios(list_req: ListPortfolios):
         portfolios = connection.execute(
             sqlalchemy.text(
                 """
-                SELECT port_id, port_name
+                SELECT port_id, port_name, buying_power
                 FROM portfolios
                 WHERE user_id = :user_id
                 """
@@ -127,7 +127,11 @@ def list_portfolios(list_req: ListPortfolios):
 
         return ListResponse(
             portfolios=[
-                {"portfolio_id": p.port_id, "portfolio_name": p.port_name}
+                {
+                    "portfolio_id": p.port_id,
+                    "portfolio_name": p.port_name,
+                    "buying_power": p.buying_power
+                }
                 for p in portfolios
             ]
         )
