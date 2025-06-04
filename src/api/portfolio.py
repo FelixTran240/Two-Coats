@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field, field_validator
 import sqlalchemy
 from src.api import auth
 from src import database as db
+from typing import List
 
 
 router = APIRouter(
@@ -275,5 +276,91 @@ def switch_portfolio(switch_request: SwitchPortfolio):
             user_id=update.user_id,
             current_portfolio=update.current_portfolio,
             current_portfolio_name=switch_request.portfolio_name
+        )
+
+
+class HoldingOut(BaseModel):
+    stock_id: int
+    num_shares: float
+    total_shares_value: float
+
+class HoldingsResponse(BaseModel):
+    portfolio_id: int
+    buying_power: float
+    holdings: List[HoldingOut]
+
+@router.post("/get_portfolio_holdings", response_model=HoldingsResponse)
+def get_portfolio_holdings(fcp: FindCurrentPortfolio):
+    """
+    Show all holdings for the user's current portfolio, including buying power.
+    """
+    with db.engine.begin() as connection:
+        # Verify session token
+        logged_in = connection.execute(
+            sqlalchemy.text(
+                """
+                SELECT user_id FROM temp_user_tokens
+                WHERE token = :session_token
+                """
+            ),
+            {"session_token": fcp.session_token}
+        ).first()
+
+        if not logged_in:
+            raise HTTPException(status_code=401, detail="Invalid session token")
+
+        user_id = logged_in.user_id
+
+        # Get current portfolio id
+        res = connection.execute(
+            sqlalchemy.text(
+                """
+                SELECT current_portfolio FROM user_current_portfolio
+                WHERE user_id = :user_id
+                """
+            ),
+            {"user_id": user_id}
+        ).first()
+
+        if not res:
+            raise HTTPException(status_code=404, detail="No current portfolio set for this user")
+
+        portfolio_id = res.current_portfolio
+
+        # Get buying power for this portfolio
+        bp_res = connection.execute(
+            sqlalchemy.text(
+                """
+                SELECT buying_power FROM portfolios
+                WHERE port_id = :portfolio_id
+                """
+            ),
+            {"portfolio_id": portfolio_id}
+        ).first()
+
+        buying_power = bp_res.buying_power if bp_res else 0.0
+
+        # Get holdings for this portfolio
+        holdings = connection.execute(
+            sqlalchemy.text(
+                """
+                SELECT stock_id, num_shares, total_shares_value
+                FROM portfolio_holdings
+                WHERE port_id = :portfolio_id
+                """
+            ),
+            {"portfolio_id": portfolio_id}
+        ).fetchall()
+
+        return HoldingsResponse(
+            portfolio_id=portfolio_id,
+            buying_power=buying_power,
+            holdings=[
+                HoldingOut(
+                    stock_id=h.stock_id,
+                    num_shares=h.num_shares,
+                    total_shares_value=h.total_shares_value
+                ) for h in holdings
+            ]
         )
 
