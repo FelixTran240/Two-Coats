@@ -24,7 +24,7 @@ class CreationResponse(BaseModel):
     portfolio_name: str
 
 @router.post("/create", response_model=CreationResponse)
-def create_portfolio(new_portfolio: CreatePortfolio):
+def create_portfolio(new_portfolio: CreatePortfolio) -> CreationResponse:
     """
     Creates a new portfolio under a user's ownership after authentication
     """
@@ -93,7 +93,7 @@ class ListResponse(BaseModel):
     portfolios: list[dict]
 
 @router.post("/list_portfolios", response_model=ListResponse)
-def list_portfolios(list_req: ListPortfolios):
+def list_portfolios(list_req: ListPortfolios) -> ListResponse:
     """
     List the portfolios that users own (and their information) 
     """
@@ -117,24 +117,30 @@ def list_portfolios(list_req: ListPortfolios):
         portfolios = connection.execute(
             sqlalchemy.text(
                 """
-                SELECT port_id, port_name, buying_power
-                FROM portfolios
+                SELECT
+                p.port_id, p.port_name, p.buying_power,
+                p.buying_power + COALESCE(SUM(ph.total_shares_value), 0) AS portfolio_value
+                FROM portfolios p
+                LEFT JOIN portfolio_holdings ph ON p.port_id = ph.port_id
                 WHERE user_id = :user_id
+                GROUP BY
+                p.port_id, p.port_name, p.buying_power
                 """
             ),
             {"user_id": user.user_id}
         ).fetchall()
 
-        return ListResponse(
-            portfolios=[
-                {
-                    "portfolio_id": p.port_id,
-                    "portfolio_name": p.port_name,
-                    "buying_power": p.buying_power
-                }
-                for p in portfolios
-            ]
-        )
+        portfolios_list=[
+            {
+                "portfolio_id": p.port_id,
+                "portfolio_name": p.port_name,
+                "buying_power": float(p.buying_power),
+                "portfolio_value": float(p.portfolio_value)
+            }
+            for p in portfolios
+        ]
+
+        return ListResponse(portfolios=portfolios_list)
 
 
 class FindCurrentPortfolio(BaseModel):
@@ -144,13 +150,15 @@ class FindCurrentPortfolioResponse(BaseModel):
     message: str
     portfolio_id: int
     portfolio_name: str
-    buying_power: str 
+    buying_power: float 
+    portfolio_value: float
 
 @router.post("/find_current_portfolio", response_model=FindCurrentPortfolioResponse)
-def find_current_portfolio(fcp: FindCurrentPortfolio):
+def find_current_portfolio(fcp: FindCurrentPortfolio) -> FindCurrentPortfolioResponse:
     """
     Return the current portfolio the user is in.
     """
+
     with db.engine.begin() as connection:
         # Verify session token
         logged_in = connection.execute(
@@ -169,32 +177,32 @@ def find_current_portfolio(fcp: FindCurrentPortfolio):
         user_id = logged_in.user_id
 
         # Retrieve user's current portfolio
-        # TODO: squeeze into one subquery by joining current_portfolio and
-        # portfolios to return both portfolio id and portfolio name
-
-        # Join user_current_portfolio and portfolios to get id and name
-
         res = connection.execute(
             sqlalchemy.text(
                 """
-                SELECT p.port_id, p.port_name, p.buying_power
+                SELECT 
+                p.port_id, p.port_name, p.buying_power,
+                p.buying_power + COALESCE(SUM(ph.total_shares_value), 0) AS portfolio_value
                 FROM user_current_portfolio ucp
                 JOIN portfolios p ON ucp.current_portfolio = p.port_id
+                LEFT JOIN portfolio_holdings ph ON p.port_id = ph.port_id
                 WHERE ucp.user_id = :user_id
+                GROUP BY p.port_id, p.port_name, p.buying_power
                 """
             ),
             {"user_id": user_id}
         ).first()
 
+        # Instead of returning null values, throw a 404 error.
         if not res:
-            # Instead of returning null values, throw a 404 error.
             raise HTTPException(status_code=404, detail="No current portfolio set for this user")
 
         return FindCurrentPortfolioResponse(
             message = "Current portfolio found",
             portfolio_id = res.port_id,
             portfolio_name = res.port_name,
-            buying_power = format(res.buying_power, ".2f") 
+            buying_power = float(res.buying_power),
+            portfolio_value = float(res.portfolio_value)
         ) 
 
 
@@ -211,7 +219,7 @@ class SwitchResponse(BaseModel):
     current_portfolio_name: str
 
 @router.post("/switch", response_model=SwitchResponse)
-def switch_portfolio(switch_request: SwitchPortfolio):
+def switch_portfolio(switch_request: SwitchPortfolio) -> SwitchResponse:
     """
     Updates value that represents the user's current active portfolio
     """
@@ -281,19 +289,22 @@ def switch_portfolio(switch_request: SwitchPortfolio):
 
 class HoldingOut(BaseModel):
     stock_id: int
+    stock_ticker: str
     num_shares: float
     total_shares_value: float
 
 class HoldingsResponse(BaseModel):
     portfolio_id: int
+    portfolio_value: float
     buying_power: float
     holdings: List[HoldingOut]
 
 @router.post("/get_portfolio_holdings", response_model=HoldingsResponse)
-def get_portfolio_holdings(fcp: FindCurrentPortfolio):
+def get_portfolio_holdings(fcp: FindCurrentPortfolio) -> HoldingsResponse:
     """
     Show all holdings for the user's current portfolio, including buying power.
     """
+
     with db.engine.begin() as connection:
         # Verify session token
         logged_in = connection.execute(
@@ -344,23 +355,46 @@ def get_portfolio_holdings(fcp: FindCurrentPortfolio):
         holdings = connection.execute(
             sqlalchemy.text(
                 """
-                SELECT stock_id, num_shares, total_shares_value
-                FROM portfolio_holdings
-                WHERE port_id = :portfolio_id
+                SELECT
+                ph.stock_id, ph.num_shares, ph.total_shares_value, s.ticker_symbol
+                FROM portfolio_holdings ph
+                JOIN stocks s ON ph.stock_id = s.stock_id
+                WHERE ph.port_id = :portfolio_id
                 """
             ),
             {"portfolio_id": portfolio_id}
         ).fetchall()
 
+        # Store list of holdings
+        holdings_list = [
+            HoldingOut(
+                stock_id=h.stock_id,
+                stock_ticker=h.ticker_symbol,
+                num_shares=h.num_shares,
+                total_shares_value=h.total_shares_value
+            ) for h in holdings
+        ]
+
+        # Get overall value of portfolio (buying power + total_shares_value)
+        value = connection.execute(
+            sqlalchemy.text(
+                """
+                SELECT SUM(total_shares_value) AS portfolio_value
+                FROM portfolio_holdings
+                WHERE port_id = :portfolio_id 
+                GROUP BY port_id
+                """
+            ),
+            {"portfolio_id": portfolio_id}
+        ).first()
+
+        total_value = value.portfolio_value if value and value.portfolio_value else 0
+        portfolio_value = buying_power + total_value
+
         return HoldingsResponse(
             portfolio_id=portfolio_id,
+            portfolio_value=portfolio_value,
             buying_power=buying_power,
-            holdings=[
-                HoldingOut(
-                    stock_id=h.stock_id,
-                    num_shares=h.num_shares,
-                    total_shares_value=h.total_shares_value
-                ) for h in holdings
-            ]
+            holdings=holdings_list
         )
 
