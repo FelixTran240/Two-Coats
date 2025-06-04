@@ -8,7 +8,7 @@ fake = Faker()
 engine = create_engine("postgresql://myuser:mypassword@localhost:5432/mydatabase")
 SessionLocal = sessionmaker(bind=engine)
 
-def insert_fake_users(num_users=50000):
+def insert_fake_users(num_users=10000):
     """Insert fake users into the database."""
     session = SessionLocal()
     print("Inserting fake users...")
@@ -21,76 +21,75 @@ def insert_fake_users(num_users=50000):
             """),
             {"username": username}
         )
-        if i % 1000 == 0:
-            session.commit()
-            print(f"Inserted {i} users...")
     session.commit()
     session.close()
+    print(f"Total users created: {num_users}")
 
-def insert_fake_portfolios():
+def insert_fake_portfolios(num_portfolios_per_user=5):
     session = SessionLocal()
     print("Inserting fake portfolios...")
     initial_buying_power = 10000.00
     users = session.execute(text("SELECT id FROM users")).fetchall()
-    for i, row in enumerate(users, 1):
+    count = 0
+    for row in users:
         user_id = row[0]
-        portfolio_name = f"Portfolio_{user_id}"  # Create a portfolio name based on user_id
-        session.execute(
-            text("""
-                INSERT INTO portfolios (user_id, buying_power, port_name)
-                VALUES (:user_id, :buying_power, :port_name)
-            """),
-            {"user_id": user_id, "buying_power": initial_buying_power, "port_name": portfolio_name}
-        )
+        for j in range(num_portfolios_per_user):
+            portfolio_name = f"Portfolio_{user_id}_{j+1}"
+            session.execute(
+                text("""
+                    INSERT INTO portfolios (user_id, buying_power, port_name)
+                    VALUES (:user_id, :buying_power, :port_name)
+                """),
+                {"user_id": user_id, "buying_power": initial_buying_power, "port_name": portfolio_name}
+            )
+            count += 1
+        # Set the first portfolio as current for each user
         session.execute(
             text("""
                 INSERT INTO user_current_portfolio (user_id, current_portfolio)
-                VALUES (:user_id, (SELECT port_id FROM portfolios WHERE user_id = :user_id LIMIT 1))
+                VALUES (:user_id, (SELECT port_id FROM portfolios WHERE user_id = :user_id ORDER BY port_id LIMIT 1))
             """),
             {"user_id": user_id}
         )
-        if i % 1000 == 0:
-            session.commit()
-            print(f"Inserted {i} portfolios...")
     session.commit()
     session.close()
+    print(f"Total portfolios created: {count}")
 
-def insert_fake_transactions(num_transactions=1000):
+def insert_fake_transactions(transactions_per_user=50):
     """Insert fake transactions into the database."""
     session = SessionLocal()
     print("Inserting fake transactions...")
-    # Get list of user IDs
-    user_ids = [row[0] for row in session.execute(text("SELECT id FROM users")).fetchall()]
-    # Define a list of tickers and a mapping to stock_ids
+    users = session.execute(text("SELECT id FROM users")).fetchall()
     tickers = ['NVDA', 'TSM', 'ORCL', 'GME', 'ADBE', 'CRM', 'RIOT']
     ticker_map = {'NVDA': 1, 'TSM': 2, 'ORCL': 3, 'GME': 4, 'ADBE': 5, 'CRM': 6, 'RIOT': 7}
-    for i in range(num_transactions):
-        user_id = random.choice(user_ids)
-        ticker = random.choice(tickers)
-        stock_id = ticker_map[ticker]
-        transaction_type = random.choice(['buy', 'sell'])
-        change = round(random.uniform(0.1, 100), 2)  # Example change value
-        session.execute(
-            text("""
-                INSERT INTO transactions (user_id, stock_id, transaction_type, change)
-                VALUES (:user_id, :stock_id, :transaction_type, :change)
-            """),
-            {"user_id": user_id, "stock_id": stock_id, "transaction_type": transaction_type, "change": change}
-        )
-        if i % 1000 == 0:
-            session.commit()
-            if i % 10000 == 0:
-                print(f"Inserted {i} transactions...")
+    total = 0
+    for user in users:
+        user_id = user[0]
+        for i in range(transactions_per_user):
+            ticker = random.choice(tickers)
+            stock_id = ticker_map[ticker]
+            transaction_type = random.choice(['buy', 'sell'])
+            change = round(random.uniform(0.1, 100), 2)
+            session.execute(
+                text("""
+                    INSERT INTO transactions (user_id, stock_id, transaction_type, change)
+                    VALUES (:user_id, :stock_id, :transaction_type, :change)
+                """),
+                {"user_id": user_id, "stock_id": stock_id, "transaction_type": transaction_type, "change": change}
+            )
+            total += 1
     session.commit()
     session.close()
+    print(f"Total transactions created: {total}")
 
-def insert_fake_portfolio_holdings(num_holdings=10):
+def insert_fake_portfolio_holdings(num_holdings=10000):
     """Insert fake portfolio holdings into the database."""
     session = SessionLocal()
     print("Inserting fake portfolio holdings...")
     portfolios = session.execute(text("SELECT port_id FROM portfolios")).fetchall()
     tickers = ['NVDA', 'TSM', 'ORCL', 'GME', 'ADBE', 'CRM', 'RIOT']
     ticker_map = {'NVDA': 1, 'TSM': 2, 'ORCL': 3, 'GME': 4, 'ADBE': 5, 'CRM': 6, 'RIOT': 7}
+    count = 0
     for i in range(num_holdings):
         port_id = random.choice(portfolios)[0]
         ticker = random.choice(tickers)
@@ -105,12 +104,10 @@ def insert_fake_portfolio_holdings(num_holdings=10):
             """),
             {"port_id": port_id, "stock_id": stock_id, "num_shares": num_shares, "total_shares_value": total_shares_value}
         )
-        if i % 1000 == 0:
-            session.commit()
-            if i % 50000 == 0:
-                print(f"Inserted {i} portfolio holdings...")
+        count += 1
     session.commit()
     session.close()
+    print(f"Total portfolio holdings created: {count}")
 
 def reset_database():
     session = SessionLocal()
