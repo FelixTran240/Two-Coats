@@ -25,8 +25,8 @@ class BuyResponse(BaseModel):
     num_shares_bought: float
     total_cost: float
 
-@router.post("/buy", response_model=BuyResponse)
-def buy_stock(request: BuyRequest):
+@router.post("/buy_shares", response_model=BuyResponse)
+def buy_shares(request: BuyRequest):
     """
     Allows user to buy a specific stock based on  
     ticker symbol and the current portfolio they are in
@@ -149,12 +149,13 @@ def buy_stock(request: BuyRequest):
         transaction = connection.execute(
             sqlalchemy.text(
                 """
-                INSERT INTO transactions (user_id, stock_id, transaction_type, change)
-                VALUES (:user_id, :stock_id, 'buy', :change)
+                INSERT INTO transactions (port_id, user_id, stock_id, transaction_type, change)
+                VALUES (:port_id, :user_id, :stock_id, 'buy', :change)
                 RETURNING transaction_id
                 """
             ),
             {
+                "port_id": port_id,
                 "user_id": user_id,
                 "stock_id": stock_id,
                 "change": total_cost
@@ -182,8 +183,8 @@ class SellResponse(BaseModel):
     num_shares_sold: float
     total_proceeds: float
 
-@router.post("/sell", response_model=SellResponse)
-def sell_stock(request: SellRequest):
+@router.post("/sell_shares", response_model=SellResponse)
+def sell_shares(request: SellRequest):
     """
     Allows user to sell a specific stock from the portfolio they're in.
     """
@@ -310,12 +311,13 @@ def sell_stock(request: SellRequest):
         transaction = connection.execute(
             sqlalchemy.text(
                 """
-                INSERT INTO transactions (user_id, stock_id, transaction_type, change)
-                VALUES (:user_id, :stock_id, 'sell', :change)
+                INSERT INTO transactions (port_id, user_id, stock_id, transaction_type, change)
+                VALUES (:port_id, :user_id, :stock_id, 'sell', :change)
                 RETURNING transaction_id
                 """
             ),
             {
+                "port_id": port_id,
                 "user_id": user_id,
                 "stock_id": stock_id,
                 "change": total_proceeds
