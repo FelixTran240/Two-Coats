@@ -70,15 +70,32 @@ CREATE INDEX idx_transactions_user_id ON transactions(user_id);
 
 ```sql
 EXPLAIN ANALYZE
-
+SELECT transaction_id, port_id, stock_id, transaction_type, change
+FROM transactions
+WHERE user_id = 100
+ORDER BY transaction_id DESC
+LIMIT 50;
 ```
 
 _Result (example):_
-
 ```
-
+Limit  (cost=6789.65..6794.55 rows=42 width=22) (actual time=11.354..13.911 rows=50 loops=1)
+  ->  Gather Merge  (cost=6789.65..6794.55 rows=42 width=22) (actual time=11.352..13.907 rows=50 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        ->  Sort  (cost=5789.63..5789.68 rows=21 width=22) (actual time=9.332..9.334 rows=17 loops=3)
+              Sort Key: transaction_id DESC
+              Sort Method: quicksort  Memory: 28kB
+              Worker 0:  Sort Method: quicksort  Memory: 25kB
+              Worker 1:  Sort Method: quicksort  Memory: 25kB
+              ->  Parallel Seq Scan on transactions  (cost=0.00..5789.17 rows=21 width=22) (actual time=5.659..9.290 rows=17 loops=3)
+                    Filter: (user_id = 100)
+                    Rows Removed by Filter: 166650
+Planning Time: 0.080 ms
+Execution Time: 13.006 ms
 
 
 ```
 
 **Conclusion:**
+The optimization had limited impact because the transactions table is large, and filtering by user_id still requires scanning a significant portion of the data. As a result, the query performance did not improve substantially.
