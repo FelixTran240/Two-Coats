@@ -379,17 +379,18 @@ def get_portfolio_holdings(fcp: FindCurrentPortfolio) -> HoldingsResponse:
         value = connection.execute(
             sqlalchemy.text(
                 """
-                SELECT SUM(total_shares_value) AS portfolio_value
-                FROM portfolio_holdings
-                WHERE port_id = :portfolio_id 
-                GROUP BY port_id
+                SELECT 
+                p.buying_power + COALESCE(SUM(ph.total_shares_value), 0) AS portfolio_value
+                FROM portfolios p
+                LEFT JOIN portfolio_holdings ph ON p.port_id = ph.port_id
+                WHERE p.port_id = :portfolio_id 
+                GROUP BY p.port_id, p.buying_power
                 """
             ),
             {"portfolio_id": portfolio_id}
         ).first()
 
-        total_value = value.portfolio_value if value and value.portfolio_value else 0
-        portfolio_value = buying_power + total_value
+        portfolio_value = value.portfolio_value
 
         return HoldingsResponse(
             portfolio_id=portfolio_id,

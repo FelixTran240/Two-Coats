@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from pydantic import BaseModel, Field, field_validator
-from decimal import Decimal
-from typing import List
+from decimal import Decimal, ROUND_HALF_UP
+from typing import List, ClassVar
 from collections import defaultdict
 
 import sqlalchemy
@@ -18,7 +18,17 @@ router = APIRouter(
 class BuySharesRequest(BaseModel):
     session_token: str
     stock_ticker: str
-    num_shares: float
+    num_shares: float 
+
+    @field_validator("num_shares")
+    @classmethod
+    def validate_num_shares_decimal(cls, value: float) -> float:
+        if value <= 0:
+            raise HTTPException(status_code=400, detail="Number of shares must be greater than 0")
+        decimal_places = abs(Decimal(str(value)).as_tuple().exponent)
+        if decimal_places > 2:
+            raise HTTPException(status_code=400, detail="Number of shares cannot exceed 2 decimal places")
+        return value
 
 class BuyResponse(BaseModel):
     message: str
@@ -30,8 +40,8 @@ class BuyResponse(BaseModel):
 @router.post("/buy_shares", response_model=BuyResponse)
 def buy_shares(request: BuySharesRequest) -> BuyResponse:
     """
-    Allows user to buy a stock based on shares, the  
-    ticker symbol and the current portfolio they are in
+    Allows user to buy a stock based on shares (can go up to 2 decimal places), 
+    the ticker symbol, and the current portfolio they are in. 
     """
 
     with db.engine.begin() as connection:
@@ -72,7 +82,7 @@ def buy_shares(request: BuySharesRequest) -> BuyResponse:
                 WHERE ticker_symbol = :ticker
                 """
             ),
-            {"ticker": request.stock_ticker}
+            {"ticker": request.stock_ticker.upper()}
         ).first()
 
         if not stock:
@@ -96,7 +106,8 @@ def buy_shares(request: BuySharesRequest) -> BuyResponse:
             raise HTTPException(status_code=404, detail="Stock price unavailable")
 
         price = price_info.price_per_share
-        total_cost = price * Decimal(str(request.num_shares))
+        num_shares = Decimal(str(request.num_shares))
+        total_cost = (num_shares * price).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
         # Check if portfolio has enough buying power
         buying_power = connection.execute(
@@ -177,11 +188,21 @@ class BuyDollarsRequest(BaseModel):
     stock_ticker: str
     dollars: float
 
+    @field_validator("dollars")
+    @classmethod
+    def validate_dollars_decimal(cls, value: float) -> float:
+        if value <= 0:
+            raise HTTPException(status_code=400, detail="Amount of dollars must be greater than 0")
+        decimal_places = abs(Decimal(str(value)).as_tuple().exponent)
+        if decimal_places > 2:
+            raise HTTPException(status_code=400, detail="Amount of dollars cannot exceed 2 decimal places")
+        return value
+
 @router.post("/buy_dollars", response_model=BuyResponse)
 def buy_dollars(request: BuyDollarsRequest) -> BuyResponse:
     """
-    Allows user to buy a stock based on shares, the  
-    ticker symbol and the current portfolio they are in
+    Allows user to buy a stock based on dollars (can go up to 2 decimal places),
+    the ticker symbol, and the current portfolio they are in.
     """
 
     with db.engine.begin() as connection:
@@ -222,7 +243,7 @@ def buy_dollars(request: BuyDollarsRequest) -> BuyResponse:
                 WHERE ticker_symbol = :ticker
                 """
             ),
-            {"ticker": request.stock_ticker}
+            {"ticker": request.stock_ticker.upper()}
         ).first()
 
         if not stock:
@@ -245,9 +266,13 @@ def buy_dollars(request: BuyDollarsRequest) -> BuyResponse:
         if not price_info:
             raise HTTPException(status_code=404, detail="Stock price unavailable")
 
-        price = price_info.price_per_share
-        total_cost = Decimal(str(request.dollars))
-        num_shares = total_cost / price 
+        dollars = Decimal(str(request.dollars)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        price = Decimal(price_info.price_per_share)
+        num_shares = (dollars / price).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        total_cost = (price * num_shares).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+        # total_cost = Decimal(str(request.dollars))
+        # num_shares = total_cost / price 
 
         # Check if portfolio has enough buying power
         buying_power = connection.execute(
@@ -328,6 +353,17 @@ class SellSharesRequest(BaseModel):
     stock_ticker: str
     num_shares: float
 
+    @field_validator("num_shares")
+    @classmethod
+    def validate_num_shares_decimal(cls, value: float) -> float:
+        if value <= 0:
+            raise HTTPException(status_code=400, detail="Number of shares must be greater than 0")
+        decimal_places = abs(Decimal(str(value)).as_tuple().exponent)
+        if decimal_places > 2:
+            raise HTTPException(status_code=400, detail="Number of shares cannot exceed 2 decimal places")
+        return value
+
+
 class SellResponse(BaseModel):
     message: str
     transaction_id: int
@@ -338,8 +374,8 @@ class SellResponse(BaseModel):
 @router.post("/sell_shares", response_model=SellResponse)
 def sell_shares(request: SellSharesRequest) -> SellResponse:
     """
-    Allows user to buy a stock based on shares, the  
-    ticker symbol and the current portfolio they are in
+    Allows user to buy a stock based on shares (can go up to 2 decimal places),
+    the ticker symbol, and the current portfolio they are in.
     """
 
     with db.engine.begin() as connection:
@@ -390,8 +426,10 @@ def sell_shares(request: SellSharesRequest) -> SellResponse:
 
         stock_id = stock.stock_id
         stock_ticker = stock.ticker_symbol
-        price = stock.price_per_share
-        total_proceeds = price * Decimal(str(request.num_shares))
+
+        price = Decimal(stock.price_per_share)
+        num_shares = Decimal(str(request.num_shares))
+        total_proceeds = (price * num_shares).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
         # Check portfolio holdings
         holding = connection.execute(
@@ -407,11 +445,11 @@ def sell_shares(request: SellSharesRequest) -> SellResponse:
             }
         ).first()
 
-        if not holding or holding.num_shares < Decimal(str(request.num_shares)):
+        if not holding or holding.num_shares < num_shares:
             raise HTTPException(status_code=400, detail="Not enough shares to sell")
 
         # Subtract shares or delete row if shares reach zero
-        new_share_count = (holding.num_shares - Decimal(str(request.num_shares)))
+        new_share_count = holding.num_shares - num_shares
         if new_share_count > 0: 
             # Adjust total_shares_value
             connection.execute(
@@ -424,7 +462,7 @@ def sell_shares(request: SellSharesRequest) -> SellResponse:
                     """
                 ),
                 {
-                    "requested_shares": Decimal(str(request.num_shares)),
+                    "requested_shares": num_shares,
                     "value": total_proceeds,
                     "port_id": port_id,
                     "stock_id": stock_id
@@ -491,11 +529,21 @@ class SellDollarsRequest(BaseModel):
     stock_ticker: str
     dollars: float
 
+    @field_validator("dollars")
+    @classmethod
+    def validate_dollars_decimal(cls, value: float) -> float:
+        if value <= 0:
+            raise HTTPException(status_code=400, detail="Amount of dollars must be greater than 0")
+        decimal_places = abs(Decimal(str(value)).as_tuple().exponent)
+        if decimal_places > 2:
+            raise HTTPException(status_code=400, detail="Amount of dollars cannot exceed 2 decimal places")
+        return value
+
 @router.post("/sell_dollars", response_model=SellResponse)
 def sell_dollars(request: SellDollarsRequest) -> SellResponse:
     """
-    Allows user to buy a stock based on shares, the  
-    ticker symbol and the current portfolio they are in
+    Allows user to buy a stock based on shares (can go up to 2 decimal places),
+    the ticker symbol, and the current portfolio they are in.
     """
 
     with db.engine.begin() as connection:
@@ -549,9 +597,13 @@ def sell_dollars(request: SellDollarsRequest) -> SellResponse:
         # price = stock.price_per_share
         # total_proceeds = price * Decimal(str(request.num_shares))
 
-        price = stock.price_per_share
-        total_proceeds = Decimal(str(request.dollars))
-        num_shares = total_proceeds / price 
+        # price = stock.price_per_share
+        # total_proceeds = Decimal(str(request.dollars))
+        # num_shares = total_proceeds / price 
+        dollars = Decimal(str(request.dollars)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        price = Decimal(stock.price_per_share)
+        num_shares = (dollars / price).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        total_proceeds = (price * num_shares).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
         # Check portfolio holdings
         holding = connection.execute(
