@@ -512,7 +512,6 @@ def sell_shares(request: SellSharesRequest) -> SellResponse:
                         WHERE
                         port_id = :port_id
                         AND stock_id = :stock_id
-                        AND num_shares <= 0.001
                         """
                     ),
                     {
@@ -698,7 +697,6 @@ def sell_dollars(request: SellDollarsRequest) -> SellResponse:
                         WHERE
                         port_id = :port_id
                         AND stock_id = :stock_id
-                        AND num_shares <= 0.001
                         """
                     ),
                     {
