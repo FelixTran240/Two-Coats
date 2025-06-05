@@ -594,12 +594,7 @@ def sell_dollars(request: SellDollarsRequest) -> SellResponse:
 
         stock_id = stock.stock_id
         stock_ticker = stock.ticker_symbol
-        # price = stock.price_per_share
-        # total_proceeds = price * Decimal(str(request.num_shares))
 
-        # price = stock.price_per_share
-        # total_proceeds = Decimal(str(request.dollars))
-        # num_shares = total_proceeds / price 
         dollars = Decimal(str(request.dollars)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
         price = Decimal(stock.price_per_share)
         num_shares = (dollars / price).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
