@@ -7,16 +7,8 @@ Two users attempt to buy shares from the same portfolio at the same time. Both r
 
 **Sequence Diagram:**
 
-User A       User B       App/DB
-  |             |            |
-  |---Read----->|            |
-  |             |---Read---> |
-  |             |<--100------|
-  |<---100------|            |
-  |---Buy $30-->             |
-  |             |---Buy $30->|
-  |---Write(70)->            |
-  |             |---Write(70)->  (Overwrites A’s update)
+
+![Lost update diagram](https://github.com/user-attachments/assets/3b5bbe42-14a5-4ed9-9668-dc609a66a43b)
 
 
 **Phenomenon:** Lost Update
@@ -32,19 +24,15 @@ Use a transaction with `SERIALIZABLE` isolation or an explicit `SELECT ... FOR U
 User A starts a transaction to buy shares and deducts buying power, but the transaction is not yet committed. User B reads the buying power and sees the uncommitted deduction, which might be rolled back.
 
 **Sequence Diagram:**
-User A       User B       App/DB
-  |             |            |
-  |---Begin TX-->            |
-  |---Deduct $50------------>|
-  |             |---Read BP->|
-  |             |<--$50------|   ← sees uncommitted deduction
-  |---Rollback----------------|
-  |                          |
 
+
+
+![Screenshot 2025-06-04 232744](https://github.com/user-attachments/assets/9c0f6e5b-9922-43c9-b8ab-25f09d927e68)
 
 **Phenomenon:** Dirty Read
 
 **Solution:**  
+
 Set the isolation level to at least `READ COMMITTED` (the default in PostgreSQL), which prevents reading uncommitted changes.
 
 ---
@@ -55,15 +43,11 @@ Set the isolation level to at least `READ COMMITTED` (the default in PostgreSQL)
 User A queries all transactions for a portfolio to calculate a summary. While User A is processing, User B inserts a new transaction for the same portfolio. If User A re-queries, the result set changes.
 
 **Sequence Diagram:**
-User A       User B       App/DB
-  |             |            |
-  |---Begin TX-->            |
-  |---Query Txns------------>|
-  |<--[txn1, txn2]-----------|
-  |             |---Insert txn3->|
-  |             |<--Success------|
-  |---Requery Txns---------->|
-  |<--[txn1, txn2, txn3]-----|
+
+
+
+![Screenshot 2025-06-04 232754](https://github.com/user-attachments/assets/4b58432a-0c59-4587-830e-548307ad3ad8)
+
 
 **Phenomenon:** Phantom Read
 
