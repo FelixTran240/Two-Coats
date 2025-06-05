@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from pydantic import BaseModel, Field, field_validator
 from decimal import Decimal, ROUND_HALF_UP
-from typing import List, ClassVar
+from typing import List, ClassVar, Dict
 from collections import defaultdict
 
 import sqlalchemy
@@ -691,5 +691,69 @@ def sell_dollars(request: SellDollarsRequest) -> SellResponse:
             num_shares_sold=num_shares,
             total_proceeds=total_proceeds
         )
+
+
+class NetTransactionResult(BaseModel):
+    stock_id: int
+    ticker_symbol: str
+    net_amount: float
+    result: str  # "positive", "negative", or "neutral"
+
+@router.get("/net-transaction-summary", response_model=List[NetTransactionResult])
+def net_transaction_summary(session_token: str):
+    """
+    For the current user, summarize all transactions across all portfolios,
+    showing the net (buy - sell) amount for each stock and whether it is positive or negative.
+    """
+    with db.engine.begin() as connection:
+        # Validate session and get user_id
+        logged_in = connection.execute(
+            sqlalchemy.text(
+                "SELECT user_id FROM temp_user_tokens WHERE token = :token"
+            ),
+            {"token": session_token}
+        ).first()
+        if not logged_in:
+            raise HTTPException(status_code=401, detail="Invalid session token")
+        user_id = logged_in.user_id
+
+        # Aggregate net transaction amount per stock
+        results = connection.execute(
+            sqlalchemy.text(
+                """
+                SELECT
+                    t.stock_id,
+                    s.ticker_symbol,
+                    SUM(
+                        CASE
+                            WHEN t.transaction_type = 'buy' THEN t.change
+                            WHEN t.transaction_type = 'sell' THEN -t.change
+                            ELSE 0
+                        END
+                    ) AS net_amount
+                FROM transactions t
+                JOIN stocks s ON t.stock_id = s.stock_id
+                WHERE t.user_id = :user_id
+                GROUP BY t.stock_id, s.ticker_symbol
+                """
+            ),
+            {"user_id": user_id}
+        ).fetchall()
+
+        summary = []
+        for row in results:
+            if row.net_amount > 0:
+                result = "positive"
+            elif row.net_amount < 0:
+                result = "negative"
+            else:
+                result = "neutral"
+            summary.append(NetTransactionResult(
+                stock_id=row.stock_id,
+                ticker_symbol=row.ticker_symbol,
+                net_amount=float(row.net_amount),
+                result=result
+            ))
+        return summary
 
 
