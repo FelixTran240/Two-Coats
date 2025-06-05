@@ -44,7 +44,7 @@ def buy_shares(request: BuySharesRequest) -> BuyResponse:
     the ticker symbol, and the current portfolio they are in. 
     """
 
-    with db.engine.begin() as connection:
+    with db.engine.begin(isolation_level="REPEATABLE READ") as connection:
         # Validate session
         logged_in = connection.execute(
             sqlalchemy.text(
@@ -113,8 +113,9 @@ def buy_shares(request: BuySharesRequest) -> BuyResponse:
         buying_power = connection.execute(
             sqlalchemy.text(
                 """
-                SELECT buying_power FROM portfolios
+                SELECT buying_power FROM portfolios 
                 WHERE port_id = :port_id
+                FOR UPDATE
                 """
             ),
             {"port_id": port_id}
@@ -135,6 +136,21 @@ def buy_shares(request: BuySharesRequest) -> BuyResponse:
             {
                 "cost": total_cost,
                 "port_id": port_id
+            }
+        )
+
+        # Temporarily lock row to avoid a lost update
+        connection.execute(
+            sqlalchemy.text(
+                """
+                SELECT * FROM portfolio_holdings 
+                WHERE port_id = :port_id AND stock_id = :stock_id
+                FOR UPDATE
+                """
+            ),
+            {
+                "port_id": port_id,
+                "stock_id": stock_id
             }
         )
 
@@ -205,7 +221,7 @@ def buy_dollars(request: BuyDollarsRequest) -> BuyResponse:
     the ticker symbol, and the current portfolio they are in.
     """
 
-    with db.engine.begin() as connection:
+    with db.engine.begin(isolation_level="REPEATABLE READ") as connection:
         # Validate session
         logged_in = connection.execute(
             sqlalchemy.text(
@@ -271,15 +287,13 @@ def buy_dollars(request: BuyDollarsRequest) -> BuyResponse:
         num_shares = (dollars / price).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
         total_cost = (price * num_shares).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
-        # total_cost = Decimal(str(request.dollars))
-        # num_shares = total_cost / price 
-
         # Check if portfolio has enough buying power
         buying_power = connection.execute(
             sqlalchemy.text(
                 """
-                SELECT buying_power FROM portfolios
+                SELECT buying_power FROM portfolios 
                 WHERE port_id = :port_id
+                FOR UPDATE
                 """
             ),
             {"port_id": port_id}
@@ -300,6 +314,21 @@ def buy_dollars(request: BuyDollarsRequest) -> BuyResponse:
             {
                 "cost": total_cost,
                 "port_id": port_id
+            }
+        )
+
+        # Lock portfolio_holdings row to prevent lost update
+        connection.execute(
+            sqlalchemy.text(
+                """
+                SELECT * FROM portfolio_holdings 
+                WHERE port_id = :port_id AND stock_id = :stock_id
+                FOR UPDATE
+                """
+            ),
+            {
+                "port_id": port_id,
+                "stock_id": stock_id
             }
         )
 
@@ -378,7 +407,7 @@ def sell_shares(request: SellSharesRequest) -> SellResponse:
     the ticker symbol, and the current portfolio they are in.
     """
 
-    with db.engine.begin() as connection:
+    with db.engine.begin(isolation_level="REPEATABLE READ") as connection:
         # Validate session
         logged_in = connection.execute(
             sqlalchemy.text(
@@ -437,6 +466,7 @@ def sell_shares(request: SellSharesRequest) -> SellResponse:
                 """
                 SELECT num_shares FROM portfolio_holdings
                 WHERE port_id = :port_id AND stock_id = :stock_id
+                FOR UPDATE
                 """
             ),
             {
@@ -482,6 +512,18 @@ def sell_shares(request: SellSharesRequest) -> SellResponse:
                     "stock_id": stock_id
                 }
             )
+
+        # Lock portfolio to prevent lost update
+        connection.execute(
+            sqlalchemy.text(
+                """
+                SELECT buying_power FROM portfolios
+                WHERE port_id = :port_id
+                FOR UPDATE
+                """
+            ),
+            {"port_id": port_id}
+        )
 
         # Add funds to buying power
         connection.execute(
@@ -546,7 +588,7 @@ def sell_dollars(request: SellDollarsRequest) -> SellResponse:
     the ticker symbol, and the current portfolio they are in.
     """
 
-    with db.engine.begin() as connection:
+    with db.engine.begin(isolation_level = "REPEATABLE READ") as connection:
         # Validate session
         logged_in = connection.execute(
             sqlalchemy.text(
@@ -606,6 +648,7 @@ def sell_dollars(request: SellDollarsRequest) -> SellResponse:
                 """
                 SELECT num_shares FROM portfolio_holdings
                 WHERE port_id = :port_id AND stock_id = :stock_id
+                FOR UPDATE
                 """
             ),
             {
@@ -651,6 +694,18 @@ def sell_dollars(request: SellDollarsRequest) -> SellResponse:
                     "stock_id": stock_id
                 }
             )
+
+        # Lock portfolio row to prevent lost update
+        connection.execute(
+            sqlalchemy.text(
+                """
+                SELECT buying_power FROM portfolios
+                WHERE port_id = :port_id
+                FOR UPDATE
+                """
+            ),
+            {"port_id": port_id}
+        )
 
         # Add funds to buying power
         connection.execute(
