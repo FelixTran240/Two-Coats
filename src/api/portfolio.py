@@ -15,8 +15,8 @@ router = APIRouter(
 
 
 class CreatePortfolio(BaseModel):
-    portfolio_name: str
     session_token: str
+    portfolio_name: str
 
 class CreationResponse(BaseModel):
     message: str
@@ -207,8 +207,8 @@ def find_current_portfolio(fcp: FindCurrentPortfolio) -> FindCurrentPortfolioRes
 
 
 class SwitchPortfolio(BaseModel):
-    portfolio_name: str
     session_token: str
+    portfolio_name: str
 
 class SwitchResponse(BaseModel):
     message: str

@@ -75,6 +75,17 @@ def create_user(new_user: UserCreate):
             ),
             {"user_id": created.id}
         )
+        
+        # Add user entry to user_current_watchlist (default is NULL)
+        connection.execute(
+            sqlalchemy.text(
+                """
+                INSERT INTO user_current_watchlist (user_id)
+                VALUES (:user_id)
+                """
+            ),
+            {"user_id": created.id}
+        )
 
         # Success response
         return CreateUserResponse(
