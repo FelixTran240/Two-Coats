@@ -3,31 +3,49 @@
 ## 1. Lost Update
 
 **Scenario:**  
-Two users attempt to buy shares from the same portfolio at the same time. Both read the current buying power, both see enough funds, and both update the balance, resulting in one update overwriting the other.
+
+A single user triggers two buy_shares or sell_shares requests simultaneously (e.g., double-clicks a "Buy" button or uses two tabs). Both read the same buying_power and portfolio_holdings, and both try to update the same rows, causing one update to overwrite the other.
 
 **Sequence Diagram:**
 
-
-![Lost update diagram](https://github.com/user-attachments/assets/3b5bbe42-14a5-4ed9-9668-dc609a66a43b)
-
+```
+User         User (tab 2)       App/DB
+ |               |                 |
+ |---Read------------------------->|
+ |               |---Read--------> |
+ |               |<----$100-------- 
+ |<----$100------------------------|
+ |---Sell $30--------------------->|
+ |               |---Buy $30-----> |
+ |---Write $130------------------->|
+ |               |---Write $70---> (Overwrites A’s update)
+```
 
 **Phenomenon:** Lost Update
 
 **Solution:**  
-Use a transaction with `SERIALIZABLE` isolation or an explicit `SELECT ... FOR UPDATE` lock on the portfolio row before updating. This ensures only one transaction can update the buying power at a time.
+Use `SELECT ... FOR UPDATE` on portfolios and portfolio_holdings within a REPEATABLE READ transaction to ensure exclusive row-level locks and prevent race conditions. Can use `SERIALIZABLE` but it could introduce more overhead due to less support for concurrency. This ensures only one transaction can update the buying power at a time.
 
 ---
 
 ## 2. Dirty Read
 
 **Scenario:**  
-User A starts a transaction to buy shares and deducts buying power, but the transaction is not yet committed. User B reads the buying power and sees the uncommitted deduction, which might be rolled back.
+A user triggers a buy_shares API call, which begins deducting buying_power, but has not committed yet. At the same time, the user looks at their account summary (or opens a second tab) and sees a partially updated or uncommitted balance which causes wrong info to be returned.
 
 **Sequence Diagram:**
 
+```
+User         User (tab 2)       App/DB
+ |               |                 |
+ |---Buy $30---------------------->|  -- Begins transaction
+ |               |                 |  -- Deducts $30 (not yet committed)
+ |               |---View Balance->|
+ |               |<----$70---------|  ❌ Sees uncommitted state (was $100)
+ |                                 |
+ |                                 |  -- Buy fails, balance should stay $100
 
-
-![Screenshot 2025-06-04 232744](https://github.com/user-attachments/assets/9c0f6e5b-9922-43c9-b8ab-25f09d927e68)
+```
 
 **Phenomenon:** Dirty Read
 
@@ -40,14 +58,19 @@ Set the isolation level to at least `READ COMMITTED` (the default in PostgreSQL)
 ## 3. Phantom Read
 
 **Scenario:**  
-User A queries all transactions for a portfolio to calculate a summary. While User A is processing, User B inserts a new transaction for the same portfolio. If User A re-queries, the result set changes.
+A user runs a GET /transactions/my_transactions query to view their entire transaction history. During this process, a new transaction record is inserted by the user (e.g., by a concurrent buy_shares call). Re-running the query gives a different set of rows.
 
 **Sequence Diagram:**
 
+```
+User             User (tab 2)         App/DB
+ |                   |                  |
+ |---Read Transactions----------------->|  -- Query returns 5 rows
+ |                   |---Buy Shares---> |  -- INSERT INTO transactions (new row)
+ |                   |                  |
+ |---Read Transactions----------------->|  -- Query now returns 6 rows (phantom row)
 
-
-![Screenshot 2025-06-04 232754](https://github.com/user-attachments/assets/4b58432a-0c59-4587-830e-548307ad3ad8)
-
+```
 
 **Phenomenon:** Phantom Read
 
@@ -62,7 +85,7 @@ Use `REPEATABLE READ` or `SERIALIZABLE` isolation level for the summary calculat
 |---------------|------------------------------------|-----------------------------------------------|
 | Lost Update   | POST /transactions/buy, /sell      | SERIALIZABLE or SELECT ... FOR UPDATE         |
 | Dirty Read    | Any read during another's update   | At least READ COMMITTED isolation             |
-| Phantom Read  | GET /transactions/my-transactions  | REPEATABLE READ or SERIALIZABLE isolation     |
+| Phantom Read  | POST /history/my_transactions      | REPEATABLE READ or SERIALIZABLE isolation     |
 
 ---
 
