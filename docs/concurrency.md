@@ -18,7 +18,7 @@ User         User (tab 2)       App/DB
  |---Sell $30--------------------->|
  |               |---Buy $30-----> |
  |---Write $130------------------->|
- |               |---Write $70---> (Overwrites A’s update)
+ |               |---Write $70---> (Overwrites update)
 ```
 
 **Phenomenon:** Lost Update
@@ -41,7 +41,7 @@ User         User (tab 2)       App/DB
  |---Buy $30---------------------->|  -- Begins transaction
  |               |                 |  -- Deducts $30 (not yet committed)
  |               |---View Balance->|
- |               |<----$70---------|  ❌ Sees uncommitted state (was $100)
+ |               |<----$70---------|  - Sees uncommitted state (was $100)
  |                                 |
  |                                 |  -- Buy fails, balance should stay $100
 
