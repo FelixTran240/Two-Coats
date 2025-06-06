@@ -518,12 +518,14 @@
 
 ## 2. `POST /transactions/sell_dollars`
 
-- **Description:** Show all holdings for the user's current portfolio, including buying power.
+- **Description:** Sell a specific stock holding based on dollars (type conversions and calculation of shares to deduct)
 - **Request Body:**
   ```json
   {
-  "session_token": "f64e8afa-8550-416b-9c19-6ebec3cc7386"
-  }
+    "session_token": "2a34256c-d463-49ac-970b-6f9f67132c21",
+    "stock_ticker": "nvda",
+    "dollars": 13.73
+}
   ```
 - **Response:**
   ```json
