@@ -25,8 +25,15 @@ def update_price_periodically():
             print("Error updating prices:", e)
         finally:
             db.close()
-        # Sleep for 10 minutes
-        time.sleep(600)
+        # Sleep for 10 minutes (600 seconds) on production, 1 second for local/dev
+        sleep_seconds = 600 if not is_render() else 60
+        time.sleep(sleep_seconds)
 
-# Start the background thread to update prices periodically
-threading.Thread(target=update_price_periodically, daemon=True).start()
+def is_render():
+    # Render sets the RENDER environment variable
+    import os
+    return os.environ.get("RENDER", "").lower() == "true"
+
+# Only start the background thread if NOT running on Render
+if not is_render():
+    threading.Thread(target=update_price_periodically, daemon=True).start()
