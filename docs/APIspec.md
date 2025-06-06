@@ -491,10 +491,53 @@
 - **Response:**
   ```json
   {
-    placeholder
+    "portfolio_id": 1,
+    "portfolio_value": 100,
+    "buying_power": 66.73,
+    "holdings": [
+      {
+        "stock_id": 4,
+        "stock_ticker": "NVDA",
+        "num_shares": 0.1,
+        "total_shares_value": 13.74
+      },
+      {
+        "stock_id": 1,
+        "stock_ticker": "AAPL",
+        "num_shares": 0.1,
+        "total_shares_value": 19.53
+      }
+    ]
   }
   ```
 - **Errors:**
   - `401 Unauthorized`: Invalid session token.
+  - `422 Unprocessable Content`: Expecting value.
 
 ---
+
+## 2. `POST /transactions/sell_dollars`
+
+- **Description:** Show all holdings for the user's current portfolio, including buying power.
+- **Request Body:**
+  ```json
+  {
+  "session_token": "f64e8afa-8550-416b-9c19-6ebec3cc7386"
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "message": "Stock successfully sold",
+    "transaction_id": 10,
+    "stock_ticker": "NVDA",
+    "num_shares_sold": 0.09994176736060562,
+    "total_proceeds": 13.73
+  }
+  ```
+- **Errors:**
+  - `401 Unauthorized`: Invalid session token.
+  - `422 Unprocessable Content`: Expecting value.
+
+---
+
