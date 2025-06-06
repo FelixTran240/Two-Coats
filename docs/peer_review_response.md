@@ -226,11 +226,183 @@ Response:
 ]
 ```
 
----
-
 ## Product Ideas - Rishan Baweja
 
 - Suggested limit orders
 - Suggested seeing net amount of stock based on gain/loss
+
+---
+
+
+## Code Review - Sreerenjini Namboothiri
+- Removed exposed database password
+- /// Buy and sell consolidated into one file and share a TransactShares BaseModel for validation ///
+- /// Test redone to fix input inconsistency ///
+- models.py removed in place of having BaseModels available in their appropriate files
+- Stock model removed in place of specific endpoint request and response BaseModels
+- Removed all Flask usage for use of FastAPI
+- /// transaction.py functions now wrapped in try/except blocks to account for network failures ///
+- Suggested versioning/namespace separation in endpoint paths
+- Flask usage removed
+- Tests made to interact with local environment
+- Endpoints now have a more consistent style
+- /// README updated to include setup steps ///
+
+---
+
+## Schema/API Design - Sreerenjini Namboothiri
+- Authorization processes integrated
+- Endpoint route names kept for now for organization/style consistency
+- Transactions now have unified request body, but watchlists will not require the user to specify the amount of shares/dollars of a stock
+- Pydantic implemented
+- /// Validation added for start and end in history ///
+- Suggested abuse prevention by rate limiting, but using the API key for security right now for the current scope of the project
+- Separate table made to track stock_state with a foreign key reference to stocks table (with updated_at timestamp)
+- Users no longer have control of inputting string 'buy' or 'sell' when transacting because buy and sell endpoints have been expanded into more specific endpoints
+- Named foreign key constraints the same across different tables for consistency and avoiding confusion when downgrading, as removing those constraints will also require the specified table to be input
+- Necessary timestamp fields added to tables that needed them
+- Tokens table added that hold active session tokens
+- Transactions table accounts for both buying and selling
+
+
+---
+
+## Test Results - Sreerenjini Namboothiri
+
+### 1. Check the price of a valid stock
+```
+curl -X 'GET' \
+  'https://two-coats-jpcx.onrender.com/stocks/price?stock_ticker=AAPL' \
+  -H 'accept: application/json' \
+  -H 'access_token: gluttony'
+```
+Response: 
+```
+{
+  "stock_ticker": "AAPL",
+  "stock_name": "Apple Inc.",
+  "price_per_share": 195.27
+}
+```
+
+### 2. Create a valid buy transaction
+```
+curl -X 'POST' \
+  'https://two-coats-jpcx.onrender.com/transactions/buy_shares' \
+  -H 'accept: application/json' \
+  -H 'access_token: gluttony' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "session_token": "7bdd1ef2-51a7-436e-8395-0e0f9f2a560f",
+  "stock_ticker": "AAPL",
+  "num_shares": 0.1
+}'
+```
+Response: 
+```
+{
+  "message": "Stock successfully purchased",
+  "transaction_id": 5,
+  "stock_ticker": "AAPL",
+  "num_shares_bought": 0.1,
+  "total_cost": 19.53
+}
+```
+
+### 3. Check price of a nonexistent stock
+```
+curl -X 'GET' \
+  'https://two-coats-jpcx.onrender.com/stocks/price?stock_ticker=junk' \
+  -H 'accept: application/json' \
+  -H 'access_token: gluttony'
+```
+Response:
+```
+{
+  "detail": "Stock not found"
+}
+```
+
+### 4. Buy request missing required field (price)
+```
+curl -X 'GET' \
+  'https://two-coats-jpcx.onrender.com/stocks/price?stock_ticker=junk' \
+  -H 'accept: application/json' \
+  -H 'access_token: gluttony'
+```
+Response:
+```
+Error: response status is 422
+{
+  "detail": [
+    {
+      "type": "json_invalid",
+      "loc": [
+        "body",
+        87
+      ],
+      "msg": "JSON decode error",
+      "input": {},
+      "ctx": {
+        "error": "Expecting property name enclosed in double quotes"
+      }
+    }
+  ]
+}
+```
+
+### 5. Buy request with incorrect data type for price
+```
+curl -X 'POST' \
+  'https://two-coats-jpcx.onrender.com/transactions/buy_dollars' \
+  -H 'accept: application/json' \
+  -H 'access_token: gluttony' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "session_token": "7bdd1ef2-51a7-436e-8395-0e0f9f2a560f",
+  "stock_ticker": "TSLA",
+  "dollars": "twenty"
+}'
+```
+Response:
+```
+Error: response status is 422
+{
+  "detail": [
+    {
+      "type": "float_parsing",
+      "loc": [
+        "body",
+        "dollars"
+      ],
+      "msg": "Input should be a valid number, unable to parse string as a number",
+      "input": "twenty"
+    }
+  ]
+}
+```
+
+### 6. Get buy transaction history when none exist
+```
+curl -X 'POST' \
+  'https://two-coats-jpcx.onrender.com/history/my_transactions' \
+  -H 'accept: application/json' \
+  -H 'access_token: gluttony' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "session_token": "f64e8afa-8550-416b-9c19-6ebec3cc7386"
+}'
+```
+Response:
+```
+{}
+```
+
+---
+
+## Product Ideas - Sreerenjini Namboothiri
+
+- Suggested a simulated portfolio with certain investments that start at a certain day to see analytics of its performance to-date
+- Suggested enforcement of PDT rules
 
 ---
