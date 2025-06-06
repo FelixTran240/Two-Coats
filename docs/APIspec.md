@@ -1,6 +1,6 @@
 # API Specification
 
-## 1. `POST /users/register`
+## 1. `POST /users/create`
 
 - **Description:** Register a new user with username and password.
 - **Request Body:**
@@ -16,7 +16,7 @@
 
 ---
 
-## 2. `POST /auth/login`
+## 2. `POST /users/login`
 
 - **Description:** Authenticate a user and return an API token for future requests.
 - **Request Body:**
@@ -29,7 +29,10 @@
 - **Response:**
   ```json
   {
-    "token": "abcd1234.jwt.token"
+  "message": "Credentials verified",
+  "user_id": 2,
+  "username": "felix",
+  "session_token": "f64e8afa-8550-416b-9c19-6ebec3cc7386"
   }
   ```
 - **Errors:**
@@ -471,5 +474,27 @@
 - **Errors:**
   - `401 Unauthorized`: Invalid session token.
   - `400 Bad Request`: Not enough shares or invalid input.
+
+---
+
+# Complex Endpoints
+
+## 1. `POST /portfolio/get_portfolio_holdings`
+
+- **Description:** Show all holdings for the user's current portfolio, including buying power.
+- **Request Body:**
+  ```json
+  {
+  "session_token": "f64e8afa-8550-416b-9c19-6ebec3cc7386"
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    placeholder
+  }
+  ```
+- **Errors:**
+  - `401 Unauthorized`: Invalid session token.
 
 ---
